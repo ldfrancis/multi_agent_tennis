@@ -4,7 +4,7 @@
 Last project for DRLND.
 
 The environment involves two agents controlling rackets to bounce a ball over a net. The observation is continuous with 
-8 dimensions corresponding to the position and velocity of the ball and racket. The  action space is continuous being a 
+24 values corresponding to the position and velocity of the ball and racket. The  action space is continuous being a 
 2 dimensional vector corresponding to the movement of the racket towards the net, and jumping. An agent receives a 
 reward of 0.1 for hitting the ball over the net and -0.01 for letting the ball hit the ground or go out of bounds.
 
@@ -52,7 +52,9 @@ Evaluate a trained agent
 
 ```python main.py test```
 
-This would use the default configs specified in ```config.py```. The file config.py contains variables whose values are necessary to configure the environment, the agent, and the experiment. Below is a sample setting for the variables in config.py
+This would use the default configs specified in ```config.py```. The file config.py contains variables whose values are
+necessary to configure the environment, the agent, and the experiment. Below is a sample setting for the variables in 
+config.py
 ```
 ...
 ENV_PATH = f"./tennis_env/{ENV_FILE}"
@@ -75,7 +77,8 @@ CRITIC_LR = 5e-5
 CLIP_EPSILON = 0.2
 ```
 
-The experiment would continue running for several episodes till the agent achieves a score of 30 averaged over the last 100 episodes.
+The experiment would continue running for several episodes till the agents achieve a max score of 0.5 averaged over the 
+last 100 episodes.
 
 ## Report
 A report containing the results can be found [here](report.md)

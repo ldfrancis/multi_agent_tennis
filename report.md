@@ -1,7 +1,7 @@
 # Project Report
 
 Here is a report of the method used to solve the tennis multi agent unity environment. The environment involves two agents controlling rackets to bounce a ball over a net. The observation is continuous with 
-8 dimensions corresponding to the position and velocity of the ball and racket. The  action space is continuous being a 
+24 values corresponding to the position and velocity of the ball and racket. The  action space is continuous being a 
 2 dimensional vector corresponding to the movement of the racket towards the net, and jumping. An agent receives a 
 reward of 0.1 for hitting the ball over the net and -0.01 for letting the ball hit the ground or go out of bounds.
 
@@ -13,7 +13,7 @@ The PPO Implementation from the previous project on [continuous control](https:/
 ## PPO Agent
 A PPO agent has a policy which it tries to optimize using experiences from the environment using that policy, and with 
 the help of importance sampling, old experience can be reused for this optimization. The PPO implementation uses a 
-policy model, a critic model, and the clipped surrogate loss function. The PPO agent implementation can be found in [agent.py](ppo/agent.py)
+policy model, a critic model, and the clipped surrogate loss function. The PPO agent implementation can be found in [agent.py](ippo/agent.py)
 
 **Policy model**
 
@@ -35,7 +35,7 @@ The settings for the MIN_LOG_STD and MAX_LOG_STD are found in the [config.py](co
 
 The model for the critic is a simple MLP with 3 layers. The output layer is with one unit with no activation and the input to the model is the observation (33 dim vector) from the environment. Each of the 2 hidden layers are followed by a relu activation.
 
-The policy and critic models implementation can be found in [model.py](ppo/model.py)
+The policy and critic models implementation can be found in [model.py](ippo/model.py)
 
 **Clipped Surrogate loss**
 
@@ -44,7 +44,7 @@ The clipped surrogate loss was implemented. First the policy ratio is computed (
 
 ## Training parameters
 
-Trading was done using an adam optimizer with a learning rate of 5e-5 for both the policy and critic with batch size of 64. Collected experiences were repeatedly used to train the agent for a number of times equal to EPOCHS. The parameters for training can be configured in the [config.py](config.py)
+Traning was done using an adam optimizer with a learning rate of 5e-5 for both the policy and critic with batch size of 64. Collected experiences were repeatedly used to train the agent for a number of times equal to EPOCHS. The parameters for training can be configured in the [config.py](config.py)
 
 Below is a description of the parameters found in [config.py](config.py).
 
