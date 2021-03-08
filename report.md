@@ -21,7 +21,7 @@ When trained this way, the DDPG agent would always take the best/greedy action a
 **Actor model**
 
 The actor model is an MLP that outputs a distribution over actions from which an agent can sample from. Its input is 
-the observation from the environment. It has 3 layers with the first and last hidden layers having 64 and 32 units 
+the observation from the environment. It has 3 layers with the first and last hidden layers having 256 and 128 units 
 respectively. Each hidden unit is followed by a rectified linear unit activation. The output is passed through a tanh 
 activation to ensure that actions are in the range [-1,1]
 
@@ -36,7 +36,7 @@ The actor and critic models implementation can be found in [model.py](ddpg/model
 
 ## Training parameters
 
-Traning was done using an adam optimizer with a learning rate of 5e-5 for both the actor and critic with batch size of 128. The parameters for training can be configured in the [config.py](config.py)
+Traning was done using an adam optimizer with a learning rate of 1e-4 for both the actor and critic with batch size of 128. The parameters for training can be configured in the [config.py](config.py)
 
 Below is a description of the parameters found in [config.py](config.py).
 
@@ -68,4 +68,4 @@ Episodes | average score (last 100 episodes)
 
 ## Possible Improvements
 
-For improvements over the current results, other settings of the hyper-parameters can be tried out. Also, other algorithms like, DDPG, A2C, can be explored.
+For improvements over the current results, other settings of the hyper-parameters can be tried out. Also, the use of prioritized experience replay for DDPG can be explored.
