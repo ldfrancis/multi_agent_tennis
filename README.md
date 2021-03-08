@@ -30,7 +30,8 @@ Then proceed to installing the required packages by running
 
 ```pip install -r requirements.txt```
 
-Having installed all the required packages, the unity environment files can then be downloaded and placed in the banana_env folder. Below are links to download the unity environments for the popular operating systems;
+Having installed all the required packages, the unity environment files can then be downloaded and placed in the 
+tennis_env folder. Below are links to download the unity environments for the popular operating systems;
 
 [linux](https://s3-us-west-1.amazonaws.com/udacity-drlnd/P3/Tennis/Tennis_Linux.zip) <br/>
 [mac](https://s3-us-west-1.amazonaws.com/udacity-drlnd/P3/Tennis/Tennis.app.zip) <br/>
@@ -62,19 +63,15 @@ NUM_OBS = 33
 NUM_ACT = 4
 TARGET_SCORE = 30
 
-# ppo agent
-BATCH_SIZE = 64
-GAMMA = 0.9
-LAMBDA = 0.8
-POLICY_HIDDEN_DIM = [64, 32]
-CRITIC_HIDDEN_DIM = [64, 32]
-MAX_LOG_STD = 0
-MIN_LOG_STD = -20
-ENTROPY_WEIGHT = 0.005
-EPOCHS = 10
-POLICY_LR = 5e-5
-CRITIC_LR = 5e-5
-CLIP_EPSILON = 0.2
+# ddpg agent
+BUFFER_SIZE = int(1e5)
+BATCH_SIZE = 128
+GAMMA = 0.99
+TAU = 1e-3
+ACTOR_HIDDEN_DIM = [256, 128]
+CRITIC_HIDDEN_DIM = [256, 128]
+ACTOR_LR = 1e-4
+CRITIC_LR = 1e-4
 ```
 
 The experiment would continue running for several episodes till the agents achieve a max score of 0.5 averaged over the 

@@ -2,14 +2,19 @@ from collections import defaultdict
 from typing import List
 
 import numpy as np
-from config import ENV_PATH, TARGET_SCORE, INITIAL_RANDOM_STEPS
+from config import ENV_PATH, TARGET_SCORE
 from utils import TennisEnv
 from ddpg.agent import DDPG
 import sys
 import matplotlib.pyplot as plt
 from pathlib import Path
-
+import torch
+import random
 import os
+
+random.seed(0)
+torch.manual_seed(0)
+np.random.seed(0)
 
 os.makedirs("./plots", exist_ok=True)
 
@@ -19,8 +24,8 @@ def train_agent(agent: DDPG, env: TennisEnv, target_score: float = None):
     best_score = -np.inf
     train_info = defaultdict(lambda: [])
     print(f"Episode {episodes_so_far}: last 100 episodes score mean = {0:2f}", end="")
-    last_100_episodes_mean_score = 0
-    while last_100_episodes_mean_score < target_score:
+    last_100_episodes_average_max_score = 0
+    while last_100_episodes_average_max_score < target_score:
         episodes_so_far += 1
         episode_info = train_for_an_episode(agent, env)
         train_info["episode_max_scores"] += [episode_info["max_score"]]
@@ -28,19 +33,16 @@ def train_agent(agent: DDPG, env: TennisEnv, target_score: float = None):
         last_100_episodes_window = max(episodes_so_far - 100, 0)
         last_100_episodes_average_max_score = np.mean(train_info["episode_max_scores"][last_100_episodes_window:])
         train_info["last_100_episodes_average_max_score"] += [last_100_episodes_average_max_score]
-        train_info["actor_losses"] += [episode_info["actor_loss"]]
-        train_info["critic_losses"] += [episode_info["critic_loss"]]
         print(f"\rEpisode {episodes_so_far}: last 100 episodes average max score = "
               f"{last_100_episodes_average_max_score:2f}", f"max score = {episode_info['max_score']:4f}",
               f"mean_score = {episode_info['mean_score']:4f}", end="")
-        if episode_info["max_score"] > best_score:
-            agent.save()
-            best_score = episode_info["max_score"]
-        plot_score(train_info["last_100_episodes_average_max_score"], train_info["episode_max_scores"])
-        plot_losses(train_info["actor_losses"], train_info["critic_losses"])
+
+        # plot_losses(train_info["actor_losses"], train_info["critic_losses"])
 
     print(f"\rEpisode {episodes_so_far}: last 100 episodes score mean = "
           f"{last_100_episodes_average_max_score:2f}")
+    plot_score(train_info["last_100_episodes_average_max_score"], train_info["episode_max_scores"])
+    agent.save()
 
     return train_info
 
@@ -57,9 +59,6 @@ def train_for_an_episode(agent: DDPG, env: TennisEnv):
         for i in range(env.num_agents):
             agent.add_experience(state[i], action[i], reward[i], next_state[i], done[i])
         state = next_state
-
-        if agent.steps > INITIAL_RANDOM_STEPS:
-            agent.learn()
 
     episode_info["max_score"] = max(scores)
     episode_info["mean_score"] = np.mean(scores)

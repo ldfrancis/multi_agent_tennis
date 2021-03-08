@@ -1,20 +1,19 @@
 import copy
-from random import random
+import random
 
 import numpy as np
 import torch
-import torch.functional as F
+import torch.nn.functional as F
 
 import os
 
 from .model import Actor, Critic
 from .buffer import Buffer
-from config import ACTOR_LR, CRITIC_LR, TAU, NUM_ACT, GAMMA
+from config import ACTOR_LR, CRITIC_LR, TAU, NUM_ACT, GAMMA, BATCH_SIZE
 from pathlib import Path
 
 
 class DDPG:
-    """PPO Agent"""
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     def __init__(self):
@@ -33,38 +32,37 @@ class DDPG:
         self.steps = 0
 
         # noise
-        self.noise = OUNoise(
-            NUM_ACT,
-            theta=OU_NOISE_THETA,
-            sigma=OU_NOISE_SIGMA,
-        )
+        self.noise = OUNoise((2, NUM_ACT))
 
         # restore if checkpoint exists
         if Path("./checkpoint/checkpoint.pt").exists():
             self.restore("./checkpoint/checkpoint.pt")
 
     def take_action(self, state:np.ndarray, train=True):
-        state = torch.FloatTensor(state[None, :]).to(DDPG.device)
+        state = torch.FloatTensor(state).to(DDPG.device)
         self.actor.eval()
         action = self.actor(state).detach().cpu().numpy()
         if train:
-            action += np.clip(self.noise.sample(),-1,1)
+            action = np.clip(action+self.noise.sample(),-1,1)
         self.steps +=1
 
         return action
 
     def add_experience(self, state, action, reward, next_state, done):
         self.buffer.store(state, action, reward, next_state, done)
+        if len(self.buffer) > BATCH_SIZE:
+            self.learn()
 
     def learn(self):
-        if len(self.memory) < self.batch_size:
-            return
-        states, actions, rewards, next_states, dones = self.buffer.sample()
-        states = torch.FloatTensor(states).to(DDPG.device)
-        actions = torch.FloatTensor(actions).to(DDPG.device)
-        rewards = torch.FloatTensor(rewards).to(DDPG.device)
-        next_states = torch.FloatTensor(next_states).to(DDPG.device)
-        dones = torch.FloatTensor(dones).to(DDPG.device)
+        self.actor.train()
+        self.critic.train()
+        states, actions, rewards, next_states, dones = self.buffer.sample_batch()
+
+        # states = torch.FloatTensor(states).to(DDPG.device)
+        # actions = torch.FloatTensor(actions).to(DDPG.device)
+        # rewards = torch.FloatTensor(rewards).to(DDPG.device)
+        # next_states = torch.FloatTensor(next_states).to(DDPG.device)
+        # dones = torch.FloatTensor(dones).to(DDPG.device)
 
         masks = 1-dones
         next_actions = self.actor_target(next_states)
@@ -88,6 +86,8 @@ class DDPG:
 
         # target update
         self._target_soft_update()
+
+        return actor_loss.detach().cpu().numpy(), critic_loss.detach().cpu().numpy()
 
     def _target_soft_update(self):
         for t_param, l_param in zip(self.actor_target.parameters(), self.actor.parameters()):
@@ -137,6 +137,7 @@ class OUNoise:
         self.mu = mu * np.ones(size)
         self.theta = theta
         self.sigma = sigma
+        self.size = size
         self.reset()
 
     def reset(self):
@@ -146,9 +147,7 @@ class OUNoise:
     def sample(self) -> np.ndarray:
         """Update internal state and return it as a noise sample."""
         x = self.state
-        dx = self.theta * (self.mu - x) + self.sigma * np.array(
-            [random.random() for _ in range(len(x))]
-        )
+        dx = self.theta * (self.mu - x) + self.sigma * np.random.standard_normal(self.size)
         self.state = x + dx
         return self.state
 

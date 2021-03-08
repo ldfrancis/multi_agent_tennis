@@ -2,69 +2,53 @@ import torch
 import numpy as np
 from torch import FloatTensor
 import torch.nn.functional as F
+import torch.nn as nn
 from torch.distributions import Normal
 
 from config import NUM_OBS, NUM_ACT, ACTOR_HIDDEN_DIM, CRITIC_HIDDEN_DIM
 
+class Actor(nn.Module):
+    def __init__(self, seed=0):
+        super(Actor, self).__init__()
+        self.seed = torch.manual_seed(seed)
+        self.fc1 = nn.Linear(NUM_OBS, ACTOR_HIDDEN_DIM[0])
+        self.fc2 = nn.Linear(ACTOR_HIDDEN_DIM[0], ACTOR_HIDDEN_DIM[1])
+        self.fc3 = nn.Linear(ACTOR_HIDDEN_DIM[1], NUM_ACT)
+        self.reset_parameters()
 
-class Actor(torch.nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.hidden1 = torch.nn.Linear(NUM_OBS, ACTOR_HIDDEN_DIM[0])
-        self.hiddens = torch.nn.ModuleList([torch.nn.Linear(ACTOR_HIDDEN_DIM[i], ACTOR_HIDDEN_DIM[i+1])
-                                            for i in range(len(ACTOR_HIDDEN_DIM)-1)])
-        self.out = torch.nn.Linear(ACTOR_HIDDEN_DIM[-1], NUM_ACT)
+    def reset_parameters(self):
+        self.fc1.weight.data.uniform_(*hidden_init(self.fc1))
+        self.fc2.weight.data.uniform_(*hidden_init(self.fc2))
+        self.fc3.weight.data.uniform_(-3e-3, 3e-3)
 
-        init_layer(self.hidden1)
-        for hidden in self.hiddens:
-            init_layer(hidden)
-        init_layer(self.out, [-3e-3, 3e-3])
-        self.out.bias.data.uniform_(-3e-3, 3e-3)
-
-    def forward(self, x: FloatTensor):
-        """Forward pass through the model, input is x"""
-        x = self.hidden1(x)
-        x = F.relu(x)
-        for hidden in self.hiddens:
-            x = hidden(x)
-            x = F.relu(x)
-        action = torch.tanh(self.mu_layer(x))
-
-        return action
+    def forward(self, state):
+        x = F.relu(self.fc1(state))
+        x = F.relu(self.fc2(x))
+        return torch.tanh(self.fc3(x))
 
 
-class Critic(torch.nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.hidden1 = torch.nn.Linear(NUM_OBS+NUM_ACT, CRITIC_HIDDEN_DIM[0])
-        self.hiddens = torch.nn.ModuleList([torch.nn.Linear(CRITIC_HIDDEN_DIM[i], CRITIC_HIDDEN_DIM[i + 1])
-                                            for i in range(len(CRITIC_HIDDEN_DIM) - 1)])
-        self.value = torch.nn.Linear(CRITIC_HIDDEN_DIM[-1], 1)
+class Critic(nn.Module):
+    def __init__(self, seed=0):
+        super(Critic, self).__init__()
+        self.seed = torch.manual_seed(seed)
+        self.fc1 = nn.Linear(NUM_OBS, CRITIC_HIDDEN_DIM[0])
+        self.fc2 = nn.Linear(CRITIC_HIDDEN_DIM[0] + NUM_ACT, CRITIC_HIDDEN_DIM[1])
+        self.fc3 = nn.Linear(CRITIC_HIDDEN_DIM[1], 1)
+        self.reset_parameters()
 
-        init_layer(self.hidden1)
-        for hidden in self.hiddens:
-            init_layer(hidden)
-        init_layer(self.value)
+    def reset_parameters(self):
+        self.fc1.weight.data.uniform_(*hidden_init(self.fc1))
+        self.fc2.weight.data.uniform_(*hidden_init(self.fc2))
+        self.fc3.weight.data.uniform_(-3e-3, 3e-3)
 
-    def forward(self, x: FloatTensor, a: FloatTensor):
-        """Forward pass through the model, input is x"""
-        x = torch.cat([x, a], dim=-1)
-        x = self.hidden1(x)
-        x = F.relu(x)
-        for hidden in self.hiddens:
-            x = hidden(x)
-            x = F.relu(x)
-        val = self.value(x)
-
-        return val
+    def forward(self, state, action):
+        xs = F.relu(self.fc1(state))
+        x = torch.cat((xs, action), dim=1)
+        x = F.relu(self.fc2(x))
+        return self.fc3(x)
 
 
-def init_layer(layer, range_=None):
-    if range_ is None:
-        num_inputs = layer.weight.data.size()[0]
-        temp = 1.0/np.sqrt(num_inputs)
-        min_ = -num_inputs
-        max_ = num_inputs
-    else:
-        min_, max_ = range_
-    layer.weight.data.uniform_(min_, max_)
+def hidden_init(layer):
+    fan_in = layer.weight.data.size()[0]
+    lim = 1. / np.sqrt(fan_in)
+    return -lim, lim
